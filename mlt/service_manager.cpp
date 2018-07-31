@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <deque>
 #include <webvfx/webvfx.h>
 extern "C" {
     #include <mlt/framework/mlt_log.h>
@@ -127,8 +128,36 @@ ServiceManager::~ServiceManager()
     }
 }
 
+namespace {
+
+std::deque<ServiceManager *> _running_managers;
+
+}
+
 bool ServiceManager::initialize(int width, int height)
 {
+  {
+    if (std::find(_running_managers.begin(), _running_managers.end(), this) == _running_managers.end()) {
+      _running_managers.push_back(this);
+
+      while (_running_managers.size() > 2 && _running_managers.front() != this) {
+        ServiceManager * manager_to_destroy = _running_managers.front();
+        _running_managers.pop_front();
+        manager_to_destroy->effects->destroy();
+        manager_to_destroy->effects = nullptr;
+        mlt_log(service, MLT_LOG_ERROR, "destroyed %p %s %s\n",
+            manager_to_destroy->service,
+            mlt_properties_get(MLT_SERVICE_PROPERTIES(manager_to_destroy->service), "render_start_sec"),
+            mlt_properties_get(MLT_SERVICE_PROPERTIES(manager_to_destroy->service), "render_end_sec"));
+      }
+    }
+  }
+
+    mlt_log(service, MLT_LOG_ERROR, "initializing %p %s %s\n",
+        service,
+        mlt_properties_get(MLT_SERVICE_PROPERTIES(service), "render_start_sec"),
+        mlt_properties_get(MLT_SERVICE_PROPERTIES(service), "render_end_sec"));
+
     if (effects)
         return true;
 
@@ -222,6 +251,14 @@ static void consumerStoppingListener(mlt_properties owner, ServiceManager* self)
 
 int ServiceManager::render(WebVfx::Image* outputImage, mlt_position position, mlt_position length, bool hasAlpha)
 {
+  if (!effects) {
+    mlt_log(service, MLT_LOG_ERROR, "ServiceManager::render() effects is null %p %s %s\n",
+        service,
+        mlt_properties_get(MLT_SERVICE_PROPERTIES(service), "render_start_sec"),
+        mlt_properties_get(MLT_SERVICE_PROPERTIES(service), "render_end_sec"));
+    return 1;
+  }
+
     double time = length > 0 ? position / (double)length : 0;
 
     parameters->setPositionAndLength(position, length);
