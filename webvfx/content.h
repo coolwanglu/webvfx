@@ -27,10 +27,7 @@ public:
     // Implementor should emit contentLoadFinished(bool) signal
     virtual void loadContent(const QUrl& url) = 0;
     virtual void setContentSize(const QSize& size) = 0;
-    virtual const Effects::ImageTypeMap& getImageTypeMap() = 0;
-    virtual void setImage(const QString& name, Image* image) = 0;
     virtual bool renderContent(double time, Image* renderImage) = 0;
-    virtual void paintContent(QPainter* painter) = 0;
 
     virtual QWidget* createView(QWidget* parent) = 0;
     virtual void reload() = 0;

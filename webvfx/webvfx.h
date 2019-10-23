@@ -5,6 +5,7 @@
 #ifndef WEBVFX_WEBVFX_H_
 #define WEBVFX_WEBVFX_H_
 
+#include <string>
 #include <webvfx/effects.h>
 #include <webvfx/logger.h>
 #include <webvfx/parameters.h>
@@ -30,7 +31,7 @@ void setLogger(Logger* logger);
  *
  * Logs a message using the currently set Logger implementation.
  */
-void log(const QString& msg);
+void log(const std::string& msg);
 
 /*!
  * @brief Initialize the WebVfx framework
@@ -59,7 +60,7 @@ bool initialize();
  * @param parameters Parameters implementation to provide named parameter
  *   values for this effect
  */
-Effects* createEffects(const QString& fileName, int width, int height, Parameters* parameters = 0, bool isTransparent = false);
+Effects* createEffects(const std::string& fileName, int width, int height, Parameters* parameters = 0, bool isTransparent = false);
 
 /*!
  * @brief Workaround for MacOS

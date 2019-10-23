@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <QLibrary>
-#include <QString>
 #include <webvfx/webvfx.h>
 extern "C" {
     #include <mlt/framework/mlt_factory.h>
@@ -14,15 +12,6 @@ extern "C" {
 
 namespace MLTWebVfx
 {
-class Logger : public WebVfx::Logger
-{
-    void log(const QString& message) {
-        //XXX use log level once passed
-        //XXX any way to get service into here?
-        mlt_log(NULL, MLT_LOG_INFO, "%s\n", message.toLatin1().constData());
-    }
-};
-}
 
 static void* createService(mlt_profile profile,
                            mlt_service_type serviceType,
@@ -63,21 +52,13 @@ static void* createService(mlt_profile profile,
 
 extern "C" EXPORT MLT_REPOSITORY
 {
-    // Prevent ourself from being unloaded (dlclose) when MLT shuts down.
-    // Some pieces of QtWebKit (e.g. WebWorkers) live past event loop exit
-    // and cause a crash if we are unloaded from memory.
-    // See https://bugs.webkit.org/show_bug.cgi?id=72538
-    QLibrary lib("libmltwebvfx");
     lib.load();
 
-    MLT_REGISTER(producer_type, "webvfx", createService);
-    MLT_REGISTER(filter_type, "webvfx", createService);
-    MLT_REGISTER(transition_type, "webvfx", createService);
-
-    MLT_REGISTER(producer_type, "webvfx.panzoom", MLTWebVfx::createPanzoomProducer);
+//    MLT_REGISTER(producer_type, "webvfx", createService);
+    MLT_REGISTER(filter_type, "chromevfx", createService);
+//    MLT_REGISTER(transition_type, "webvfx", createService);
 
     // Register shutdown hook - even if we don't initialize WebVfx
     // we want our logger deleted.
     mlt_factory_register_for_clean_up(0, reinterpret_cast<mlt_destructor>(WebVfx::shutdown));
-    WebVfx::setLogger(new MLTWebVfx::Logger());
 }

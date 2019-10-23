@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <algorithm>
 #include <deque>
 #include <webvfx/webvfx.h>
 extern "C" {
@@ -28,12 +29,12 @@ public:
     {
     }
 
-    double getNumberParameter(const QString& name) {
-        return mlt_properties_anim_get_double(properties, name.toLatin1().constData(), position, length);
+    double getNumberParameter(const std::string& name) {
+        return mlt_properties_anim_get_double(properties, name.data(), position, length);
     }
 
-    QString getStringParameter(const QString& name) {
-        return QString::fromUtf8(mlt_properties_anim_get(properties, name.toLatin1().constData(), position, length));
+    std::string getStringParameter(const std::string& name) {
+      return mlt_properties_anim_get(properties, name.data(), position, length);
     }
 
     void setPositionAndLength(mlt_position newPosition, mlt_position newLength)
@@ -54,7 +55,7 @@ private:
 class ImageProducer
 {
 public:
-    ImageProducer(const QString& name, mlt_producer producer)
+    ImageProducer(const std::string& name, mlt_producer producer)
         : name(name)
         , producerFrame(0)
         , producer(producer) {}
@@ -65,7 +66,7 @@ public:
         mlt_producer_close(producer);
     }
 
-    const QString& getName() { return name; }
+    const std::string& getName() { return name; }
 
     bool isPositionValid(mlt_position position) {
         return position < mlt_producer_get_playtime(producer);
@@ -97,7 +98,7 @@ public:
     }
 
 private:
-    QString name;
+    std::string name;
     mlt_frame producerFrame;
     mlt_producer producer;
 };
@@ -179,73 +180,11 @@ bool ServiceManager::initialize(int width, int height)
         return false;
     }
 
-    // Iterate over image map - save source and target image names,
-    // and create an ImageProducer for each extra image.
-    char* factory = mlt_properties_get(properties, "factory");
-    WebVfx::Effects::ImageTypeMapIterator it(effects->getImageTypeMap());
-    while (it.hasNext()) {
-        it.next();
-
-        const QString& imageName = it.key();
-
-        switch (it.value()) {
-
-        case WebVfx::Effects::SourceImageType:
-            sourceImageName = imageName;
-            break;
-
-        case WebVfx::Effects::TargetImageType:
-            targetImageName = imageName;
-            break;
-
-        case WebVfx::Effects::ExtraImageType:
-        {
-            if (!imageProducers)
-                imageProducers = new std::vector<ImageProducer*>(3);
-
-            // Property prefix "producer.<name>."
-            QString producerPrefix("producer.");
-            producerPrefix.append(imageName).append(".");
-
-            // Find producer.<name>.resource property
-            QString resourceName(producerPrefix);
-            resourceName.append("resource");
-            char* resource = mlt_properties_get(properties, resourceName.toLatin1().constData());
-            if (resource) {
-                mlt_producer producer = mlt_factory_producer(mlt_service_profile(service), factory, resource);
-                if (!producer) {
-                    mlt_log(service, MLT_LOG_ERROR, "WebVfx failed to create extra image producer for %s\n", resourceName.toLatin1().constData());
-                    return false;
-                }
-                // Copy producer.<name>.* properties onto producer
-                mlt_properties_pass(MLT_PRODUCER_PROPERTIES(producer), properties, producerPrefix.toLatin1().constData());
-                // Append ImageProducer to vector
-                imageProducers->insert(imageProducers->end(), new ImageProducer(imageName, producer));
-            }
-            else
-                mlt_log(service, MLT_LOG_WARNING, "WebVfx no producer resource property specified for extra image %s\n", resourceName.toLatin1().constData());
-            break;
-        }
-
-        default:
-            mlt_log(service, MLT_LOG_ERROR, "Invalid WebVfx image type %d\n", it.value());
-            break;
-        }
-    }
-
     return true;
 }
 
-void ServiceManager::setImageForName(const QString& name, WebVfx::Image* image)
-{
-    if (!name.isEmpty())
-        effects->setImage(name, image);
-}
-
-
 static void consumerStoppingListener(mlt_properties owner, ServiceManager* self)
 {
-    Q_UNUSED(owner);
     self->onConsumerStopping();
 }
 
@@ -268,26 +207,6 @@ int ServiceManager::render(WebVfx::Image* outputImage, mlt_position position, ml
         effects->reload();
     }
 
-    // Produce any extra images
-    if (imageProducers) {
-        for (std::vector<ImageProducer*>::iterator it = imageProducers->begin();
-             it != imageProducers->end(); it++) {
-            ImageProducer* imageProducer = *it;
-            if (imageProducer && imageProducer->isPositionValid(position)) {
-                WebVfx::Image extraImage =
-                    imageProducer->produceImage(position,
-                                                outputImage->width(),
-                                                outputImage->height(),
-                                                hasAlpha);
-                if (extraImage.isNull()) {
-                    mlt_log(service, MLT_LOG_ERROR, "WebVfx failed to produce image for name %s\n", imageProducer->getName().toLatin1().constData());
-                    return 1;
-                }
-                effects->setImage(imageProducer->getName(), &extraImage);
-            }
-        }
-    }
-
     return !effects->render(time, outputImage);
 }
 
@@ -308,8 +227,6 @@ void ServiceManager::onConsumerStopping()
 {
     mlt_events_disconnect(event, this);
     event = 0;
-    if (effects)
-        effects->renderComplete(false);
 }
 
 }
