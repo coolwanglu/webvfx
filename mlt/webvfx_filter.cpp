@@ -36,7 +36,7 @@ static int filterGetImage(mlt_frame frame, uint8_t **image, mlt_image_format *fo
         MLTWebVfx::ServiceManager* manager = locker.getManager();
         WebVfx::Image renderedImage(*image, *width, *height,
                                     *width * *height * WebVfx::Image::BytesPerPixel);
-        manager->setImageForName(manager->getSourceImageName(), &renderedImage);
+        //manager->setImageForName(manager->getSourceImageName(), &renderedImage);
         manager->setupConsumerListener(frame);
 
         // If there is a consumer set on the frame and the consumer is stopped,

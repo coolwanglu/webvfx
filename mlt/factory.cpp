@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <iostream>
 #include <webvfx/webvfx.h>
 extern "C" {
     #include <mlt/framework/mlt_factory.h>
@@ -15,33 +16,33 @@ namespace MLTWebVfx
 
 static void* createService(mlt_profile profile,
                            mlt_service_type serviceType,
-                           const char*, const void* fileName)
-{
-    if (!WebVfx::initialize())
-        return 0;
+                           const char*, const void* fileName) {
+  std::cout << "DEBUG createService" << std::endl;
+  if (!WebVfx::initialize())
+    return 0;
 
-    mlt_service service = 0;
-    switch (serviceType) {
-        case producer_type:
-            service = MLTWebVfx::createProducer(profile);
-            break;
-        case filter_type:
-            service = MLTWebVfx::createFilter();
-            break;
-        case transition_type:
-            service = MLTWebVfx::createTransition();
-            break;
-        default:
-            return 0;
-            break;
-    }
+  mlt_service service = 0;
+  switch (serviceType) {
+    case producer_type:
+      //service = MLTWebVfx::createProducer(profile);
+      break;
+    case filter_type:
+      service = MLTWebVfx::createFilter();
+      break;
+    case transition_type:
+      //service = MLTWebVfx::createTransition();
+      break;
+    default:
+      return 0;
+      break;
+  }
 
-    if (fileName) {
-        mlt_properties_set(MLT_SERVICE_PROPERTIES(service),
-                           "resource", static_cast<const char*>(fileName));
-    }
+  if (fileName) {
+    mlt_properties_set(MLT_SERVICE_PROPERTIES(service),
+        "resource", static_cast<const char*>(fileName));
+  }
 
-    return service;
+  return service;
 }
 
 #if defined(__GNUC__) && __GNUC__ >= 4
@@ -52,7 +53,7 @@ static void* createService(mlt_profile profile,
 
 extern "C" EXPORT MLT_REPOSITORY
 {
-    lib.load();
+    //lib.load();
 
 //    MLT_REGISTER(producer_type, "webvfx", createService);
     MLT_REGISTER(filter_type, "chromevfx", createService);
@@ -61,4 +62,5 @@ extern "C" EXPORT MLT_REPOSITORY
     // Register shutdown hook - even if we don't initialize WebVfx
     // we want our logger deleted.
     mlt_factory_register_for_clean_up(0, reinterpret_cast<mlt_destructor>(WebVfx::shutdown));
+}
 }

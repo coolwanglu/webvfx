@@ -6,7 +6,6 @@
 #define WEBVFX_PARAMETERS_H_
 
 
-class QString;
 
 namespace WebVfx
 {
@@ -27,13 +26,13 @@ public:
      *
      * @param name Parameter name
      */
-    virtual double getNumberParameter(const QString& name);
+    virtual double getNumberParameter(const std::string& name);
     /*!
      * @brief Return a string value for parameter @c name.
      *
      * @param name Parameter name
      */
-    virtual QString getStringParameter(const QString& name);
+    virtual std::string getStringParameter(const std::string& name);
 };
 
 }
